@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8">
+
+        <title>BUCK@LMAX</title>
+
+        <link rel="stylesheet" href="css/reveal.css">
+        <link rel="stylesheet" href="css/theme/white.css" id="theme">
+
+        <!-- Code syntax highlighting -->
+        <link rel="stylesheet" href="lib/css/zenburn.css">
+    </head>
+
+    <body>
+
+        <div class="reveal">
+
+            <!-- Any section element inside of this container is displayed as a slide -->
+            <div class="slides">
+
+                <section>
+                    <h1>How we use Buck</h1>
+                </section>
+
+                <section>
+                    <h1>Running Buck</h1>
+                </section>
+                <section>
+                    <p>Jenkins polls svn, and decides to run some jobs</p>
+                    <p>All jenkins jobs should go via ./jenkins.sh</p>
+                </section>
+                <section>
+                    <p>./bb is called via ./jenkins.sh or by a developer</p>
+                    <p>./bb runs the specified build task, e.g. commit, deploy, drs</p>
+                </section>
+                <section>
+                    <p>./bebuck delegates to ./beant.sh with buck as the executable</p>
+                    <p>./beant.sh arranges for dependencies to be present before invoking buck</p>
+                </section>
+                <section>
+                    <p>Now we're in facebook code</p>
+                    <p>buck uses buckd to avoid repeated scanning and parsing</p>
+                    <p>buckd runs the specified command, e.g. build, test</p>
+                </section>
+
+                <section>
+                    <h1>BUCK files</h1>
+                </section>
+                <section>
+                    <p>Buck build files are always called BUCK</p>
+                    <p>BUCK files define build targets using Python code</p>
+                    <p>Targets are defined by calling Buck's built-in python functions (aka rules)</p>
+                    <p>We can abstract on rules by defining custom functions (aka macros)</p>
+                </section>
+                <section>
+                    <p>A buck command needs to specify some targets</p>
+                    <ul>
+                        <li>Absolute path: //basedir/path/to/module:target-name</li>
+                        <li>Labels (for tests): --include commit --include checkstyle</li>
+                    </ul>
+                </section>
+                <section>
+                    <p>Usually, all code in BUCK files is run before every build - so keep it quick</p>
+                    <p>By running the BUCK files buck constructs the DAG of the specified targets</p>
+                </section>
+                <section>
+                    <p>All targets in the DAG are built, in parallel where possible</p>
+                    <p>Buck parallelises by target, so having multiple small targets is usually faster than a single big target</p>
+                </section>
+                <section>
+                    <p>If the buck command is test, tests are run after the build is complete</p>
+                    <p>The test phase is not parallelised with the build phase</p>
+                    <p>Tests for different targets are parallelised</p>
+                    <p>Tests are not parallelised within a single target</p>
+                </section>
+
+                <section>
+                    <h1>Organising BUCK</h1>
+                </section>
+                <section>
+                    <p>Macros are custom Python functions for abstracting on build rules</p>
+                    <ul>
+                        <li>Macros should be defined in *.defs files</li>
+                        <li>Macros can be used in BUCK files or by other macros (via import_defs)</li>
+                        <li>All BUCK files implicitly include build.defs, because it is specified in the .buckconfig</li>
+                    </ul>
+                </section>
+                <section>
+                    <p>Module-defining macros</p>
+                    <ul>
+                        <li>lmax_module</li>
+                        <li>lmax_groovy_module</li>
+                        <li>lmax_test_module</li>
+                        <li>lmax_gwt_module</li>
+                        <li>lmax_benchmark_module</li>
+                    </ul>
+                </section>
+                <section>
+                    <p>Macros for common patterns, e.g.</p>
+                    <ul>
+                        <li>checkstyle</li>
+                        <li>findbugs</li>
+                        <li>project_config</li>
+                        <li>add_to_commit_build</li>
+                    </ul>
+                </section>
+                <section>
+                    <p>Optional extras, e.g</p>
+                    <ul>
+                        <li>creating uberjars</li>
+                        <li>building rpms</li>
+                        <li>resin hotdeploy config</li>
+                    </ul>
+                </section>
+                <section>
+                    <p>One-off patterns, e.g.</p>
+                    <ul>
+                        <li>individual archives</li>
+                        <li>java-api</li>
+                    </ul>
+                </section>
+                <section>
+                    <p>No transitive dependencies</p>
+                    <p>Transitivity for compile-time deps breaks encapsulation and increases coupling</p>
+                    <p>Transitivity for run-time deps isn't such a problem, but there is no way to distinguish them in buck</p>
+                </section>
+                <section>
+                    <p>Findbugs (almost) everywhere</p>
+                    <p>Our detector selection still needs tuning</p>
+                    <p>Try not to turn findbugs off, and try to enable it where it is currently disabled</p>
+                </section>
+                <section>
+                    <p>Macros should be simple to use and consistently applied</p>
+                    <p>Try to avoid lots of configurable parameters, use conventions instead (e.g. source locations)</p>
+                </section>
+                <section>
+                    <p>Don't use buck built-in rules or custom macros for cross cutting concerns directly in BUCK files</p>
+                    <p>Instead express your requirement in a high level macro</p>
+                </section>
+                <section>
+                    <p>We use the label on test rules to determine what targets to run in the commit build</p>
+                    <p>The add_targets_to_commit_build macro creates commit build test targets for any rule</p>
+                    <p>Any macro which introduces a target for the commit build should call add_targets_to_commit_build</p>
+                    <p>Prevents us accidentally dropping things from the commit build</p>
+                    <p>Builds integration and acceptance test code in the commit build even though tests are run by a separate job</p>
+                </section>
+                <section>
+                    <p>buck-lint</p>
+                    <p>Small Python program for running simple checks on the BUCK file ASTs</p>
+                    <p>Add checks to buck-lint if there is a rule or macro that should not be misused</p>
+                </section>
+                <section>
+                    <p>There are plenty of things wrong with our build files</p>
+                    <p>broken abstractions (e.g. lmax_test_module used for various integration tests and for tests of test support code)</p>
+                    <p>mismatched intentions (IDEA wants modules which can contain multiple test and main source roots, but main source roots may not depend on test ones; buck has no such restriction but can only have one project config per BUCK file)</p>
+                </section>
+                <section>
+                    <p>TODO</p>
+                    <ul>
+                        <li>web related macros</li>
+                        <li>acceptance test macros</li>
+                        <li>staleness checks for dependencies</li>
+                        <li>eliminate hardcoded paths to buck-out/gen</li>
+                        <li>generate the dependencies needed for deployable archives</li>
+                        <li>eliminate test-support targets - split them out to new modules</li>
+                    </ul>
+                </section>
+                <section>
+                </section>
+            </div>
+
+        </div>
+
+        <script src="lib/js/head.min.js"></script>
+        <script src="js/reveal.js"></script>
+
+        <script>
+
+            // Full list of configuration options available at:
+            // https://github.com/hakimel/reveal.js#configuration
+            Reveal.initialize({
+                controls: false,
+                progress: true,
+                history: true,
+                center: true,
+
+                transition: 'none', // none/fade/slide/convex/concave/zoom
+
+                // Optional reveal.js plugins
+                dependencies: [
+                    { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'plugin/zoom-js/zoom.js', async: true },
+                    { src: 'plugin/notes/notes.js', async: true }
+                ]
+            });
+
+        </script>
+
+    </body>
+</html>
