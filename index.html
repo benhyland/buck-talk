@@ -11,6 +11,9 @@
 
         <!-- Code syntax highlighting -->
         <link rel="stylesheet" href="lib/css/zenburn.css">
+		<style type="text/css">
+			p { text-align: left; }
+		</style>
     </head>
 
     <body>
@@ -29,27 +32,27 @@
                 </section>
                 <section>
                     <p>Jenkins polls svn, and decides to run some jobs</p>
-                    <p>All jenkins jobs should go via ./jenkins.sh</p>
+					<p>All jenkins jobs should go via <em>./jenkins.sh</em></p>
                 </section>
                 <section>
-                    <p>./bb is called via ./jenkins.sh or by a developer</p>
-                    <p>./bb runs the specified build task, e.g. commit, deploy, drs</p>
+					<p><em>./bb</em> is called via <em>./jenkins.sh</em> or by a developer</p>
+					<p><em>./bb</em> runs the specified build task, e.g. <em>commit</em>, <em>deploy</em>, <em>drs</em></p>
                 </section>
                 <section>
-                    <p>./bebuck delegates to ./beant.sh with buck as the executable</p>
-                    <p>./beant.sh arranges for dependencies to be present before invoking buck</p>
+					<p><em>./bebuck</em> delegates to <em>./beant.sh</em> with <em>buck</em> as the executable</p>
+					<p><em>./beant.sh</em> arranges for dependencies to be present before invoking <em>buck</em></p>
                 </section>
                 <section>
                     <p>Now we're in facebook code</p>
-                    <p>buck uses buckd to avoid repeated scanning and parsing</p>
-                    <p>buckd runs the specified command, e.g. build, test</p>
+					<p><em>buck</em> uses <em>buckd</em> to avoid repeated scanning and parsing</p>
+					<p><em>buckd</em> runs the specified command, e.g. <em>build</em>, <em>test</em></p>
                 </section>
 
                 <section>
                     <h1>BUCK files</h1>
                 </section>
                 <section>
-                    <p>Buck build files are always called BUCK</p>
+					<p>Buck build files are always called 'BUCK'</p>
                     <p>BUCK files define build targets using Python code</p>
                     <p>Targets are defined by calling Buck's built-in python functions (aka rules)</p>
                     <p>We can abstract on rules by defining custom functions (aka macros)</p>
@@ -57,8 +60,8 @@
                 <section>
                     <p>A buck command needs to specify some targets</p>
                     <ul>
-                        <li>Absolute path: //basedir/path/to/module:target-name</li>
-                        <li>Labels (for tests): --include commit --include checkstyle</li>
+						<li>Absolute path: <em>//basedir/path/to/module:target-name</em></li>
+						<li>Labels (for tests): <em>--include commit --include checkstyle</em></li>
                     </ul>
                 </section>
                 <section>
@@ -70,7 +73,7 @@
                     <p>Buck parallelises by target, so having multiple small targets is usually faster than a single big target</p>
                 </section>
                 <section>
-                    <p>If the buck command is test, tests are run after the build is complete</p>
+					<p>If the buck command is <em>test</em>, tests are run after the build is complete</p>
                     <p>The test phase is not parallelised with the build phase</p>
                     <p>Tests for different targets are parallelised</p>
                     <p>Tests are not parallelised within a single target</p>
@@ -82,28 +85,28 @@
                 <section>
                     <p>Macros are custom Python functions for abstracting on build rules</p>
                     <ul>
-                        <li>Macros should be defined in *.defs files</li>
-                        <li>Macros can be used in BUCK files or by other macros (via import_defs)</li>
-                        <li>All BUCK files implicitly include build.defs, because it is specified in the .buckconfig</li>
+						<li>Macros should be defined in <em>*.defs</em> files</li>
+						<li>Macros can be used in BUCK files or by other macros (via <em>import_defs</em>)</li>
+						<li>All BUCK files implicitly include <em>build.defs</em>, because it is specified in the <em>.buckconfig</em></li>
                     </ul>
                 </section>
                 <section>
                     <p>Module-defining macros</p>
                     <ul>
-                        <li>lmax_module</li>
-                        <li>lmax_groovy_module</li>
-                        <li>lmax_test_module</li>
-                        <li>lmax_gwt_module</li>
-                        <li>lmax_benchmark_module</li>
+						<li><em>lmax_module</em></li>
+						<li><em>lmax_groovy_module</em></li>
+						<li><em>lmax_test_module</em></li>
+						<li><em>lmax_gwt_module</em></li>
+						<li><em>lmax_benchmark_module</em></li>
                     </ul>
                 </section>
                 <section>
                     <p>Macros for common patterns, e.g.</p>
                     <ul>
-                        <li>checkstyle</li>
-                        <li>findbugs</li>
-                        <li>project_config</li>
-                        <li>add_to_commit_build</li>
+						<li><em>checkstyle</em></li>
+						<li><em>findbugs</em></li>
+						<li><em>project_config</em></li>
+						<li><em>add_to_commit_build</em></li>
                     </ul>
                 </section>
                 <section>
@@ -133,7 +136,7 @@
                 </section>
                 <section>
                     <p>Macros should be simple to use and consistently applied</p>
-                    <p>Try to avoid lots of configurable parameters, use conventions instead (e.g. source locations)</p>
+                    <p>Try to avoid too many configurable parameters, use conventions instead (e.g. source locations)</p>
                 </section>
                 <section>
                     <p>Don't use buck built-in rules or custom macros for cross cutting concerns directly in BUCK files</p>
@@ -141,8 +144,8 @@
                 </section>
                 <section>
                     <p>We use the label on test rules to determine what targets to run in the commit build</p>
-                    <p>The add_targets_to_commit_build macro creates commit build test targets for any rule</p>
-                    <p>Any macro which introduces a target for the commit build should call add_targets_to_commit_build</p>
+					<p>The <em>add_targets_to_commit_build</em> macro creates commit build test targets for any rule</p>
+					<p>Any macro which introduces a target for the commit build should call <em>add_targets_to_commit_build</em></p>
                     <p>Prevents us accidentally dropping things from the commit build</p>
                     <p>Builds integration and acceptance test code in the commit build even though tests are run by a separate job</p>
                 </section>
@@ -153,8 +156,8 @@
                 </section>
                 <section>
                     <p>There are plenty of things wrong with our build files</p>
-                    <p>broken abstractions (e.g. lmax_test_module used for various integration tests and for tests of test support code)</p>
-                    <p>mismatched intentions (IDEA wants modules which can contain multiple test and main source roots, but main source roots may not depend on test ones; buck has no such restriction but can only have one project config per BUCK file)</p>
+					<p>broken abstractions (e.g. <em>lmax_test_module</em> used for various integration tests and for tests of test support code)</p>
+					<p>mismatched intentions (IDEA wants modules which can contain multiple test and main source roots, but main source roots may not depend on test ones; buck has no such restriction but can only have one <em>project_config</em> per BUCK file)</p>
                 </section>
                 <section>
                     <p>TODO</p>
@@ -162,7 +165,7 @@
                         <li>web related macros</li>
                         <li>acceptance test macros</li>
                         <li>staleness checks for dependencies</li>
-                        <li>eliminate hardcoded paths to buck-out/gen</li>
+						<li>eliminate hardcoded paths to <em>buck-out/gen</em></li>
                         <li>generate the dependencies needed for deployable archives</li>
                         <li>eliminate test-support targets - split them out to new modules</li>
                     </ul>
@@ -185,6 +188,8 @@
                 progress: true,
                 history: true,
                 center: true,
+				
+				width: 960,
 
                 transition: 'none', // none/fade/slide/convex/concave/zoom
 
